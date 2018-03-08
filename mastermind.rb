@@ -5,22 +5,37 @@ class Mastermind
   VALID_COLORS = ["r", "g", "b", "y", "w"]
  
   def initialize
-  	@codemaker = CpuPlayer.new
-  	@codebreaker = Player.new
-  	@gameboard = []
-  	@secret_code = ""
+    @codemaker = CpuPlayer.new
+    @codebreaker = Player.new
+    @gameboard = []
+    @secret_code = ""
   end
+
+  def game_over?(code_attempt)
+    if @code_attempt == @secret_code
+      puts @gameboard
+      puts "You won!"
+      return true
+    elsif @code_attempt == "exit"
+      return true
+    else
+      puts @gameboard
+      puts EMPTY_SLOTS
+      return false
+    end
+  end
+
 
   def start_player_vs_cpu
     @secret_code = @codemaker.generate_code
-    puts secret_code
     show_help
     puts EMPTY_SLOTS
-    print "Enter your code attempt: "
-    @code_attempt = gets.chomp.downcase[0..3]
-    @gameboard << @codemaker.check_attempt(@code_attempt, @secret_code)
-    puts @gameboard
-    puts EMPTY_SLOTS
+    12.times do
+      print "Enter your code attempt: "
+      @code_attempt = gets.chomp.downcase[0..3]
+      @gameboard << @codemaker.check_attempt(@code_attempt, @secret_code)
+      break if game_over?(@code_attempt)
+    end
   end
 
   def show_help
@@ -32,6 +47,7 @@ class Mastermind
     puts 'Each "x" next to your code means there is one color correct but with wrong placement '
     puts 'The position of every "o" and "x" doesn\'t relate to the code '
     puts '(it doesn\'t specify the slot that is correct or not)'
+    puts 'Enter "exit" to leave the game'
     puts ""
   end
 
@@ -41,8 +57,8 @@ class Mastermind
       code = ""	
       4.times do |index|
       	while code.length != index + 1
-      	color = VALID_COLORS[rand(5)]
-      	code += color if !(code.include?(color))
+      	  color = VALID_COLORS[rand(5)]
+      	  code += color if !(code.include?(color))
         end
       end
       code
@@ -58,7 +74,7 @@ class Mastermind
           feedback << "x"
         end
       end
-      #reverse the feedback before returning it so the player can't easily deduce which color is correctly placed
+      #reverse the feedback before returning it so the player can't so easily deduce which color is correctly placed (it's easy anyway)
       feedback = feedback.reverse.join("") 
       "(#{attempt[0]}) (#{attempt[1]}) (#{attempt[2]}) (#{attempt[3]}) #{feedback}"
     end
