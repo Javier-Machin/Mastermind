@@ -1,5 +1,4 @@
 class Mastermind
-  attr_accessor :secret_code #:feedback
 
   EMPTY_SLOTS = "( ) ( ) ( ) ( )"
   VALID_COLORS = ["r", "g", "b", "y", "w"]
@@ -11,6 +10,16 @@ class Mastermind
     @secret_code = ""
   end
 
+  def select_gamemode 
+    puts "(1) Player try to guess CPU generated secret code"
+    puts "(2) Cpu try to guess Player generated code"
+    print "Select a game mode: "
+    input = gets.chomp[0]
+    input == "1" ? start_player_vs_cpu : start_cpu_vs_player
+  end
+
+  private
+
   def start_player_vs_cpu
     @secret_code = @codemaker.generate_code
     show_help
@@ -21,7 +30,7 @@ class Mastermind
       feedback = @codemaker.check_attempt(code_attempt, @secret_code)
       update_board(code_attempt, feedback)
       puts @gameboard
-      if game_over?(code_attempt)
+      if game_over?(code_attempt, feedback)
       	puts "Codebreaker won!"
       	break
       elsif index == 11
@@ -34,53 +43,48 @@ class Mastermind
     @codemaker = Player.new
     @codebreaker = CpuPlayer.new
     @secret_code = @codemaker.generate_code
-    code_attempt = @codebreaker.generate_attempt
+    code_attempt = ""
     wrong_codes = []
-    feedback = @codemaker.check_attempt(code_attempt, @secret_code)
-    update_board(code_attempt, feedback)
-    unless game_over?(code_attempt)
-      11.times do
-        wrong_codes << code_attempt
-        code_attempt = @codebreaker.generate_attempt(code_attempt, feedback, wrong_codes)
-        feedback = @codemaker.check_attempt(code_attempt, @secret_code)
-        update_board(code_attempt, feedback)
-        break if game_over?(code_attempt)
-      end
+    feedback = ""
+    12.times do |index|
+      wrong_codes << code_attempt
+      code_attempt = @codebreaker.generate_attempt(code_attempt, feedback, wrong_codes)
+      feedback = @codemaker.check_attempt(code_attempt, @secret_code)
+      update_board(code_attempt, feedback)
+      break if game_over?(code_attempt, feedback)
+      puts "You won! The CPU didn't find the code" if index == 10
     end
     puts @gameboard 
   end
 
-  def game_over?(code_attempt)
-    if code_attempt == @secret_code
-      return true
+  def game_over?(code_attempt, feedback)
+    if feedback == "oooo"
+      true
     elsif code_attempt == "exit"
-      return true
+      true
     else
-      return false
+      false
     end
   end
 
   def show_help
-    puts ''
-    puts 'From left to right enter the first letter for each color. Example: rbgy'
-    puts 'The code is 4 characters long and the possible colors are: r g b y w'
-    puts 'There isn\'t any repeated color in the secret code '
-    puts 'Each "o" next to your code means there is one color and placement correct'
-    puts 'Each "x" next to your code means there is one color correct but with wrong placement'
-    puts 'The position of every "o" and "x" doesn\'t relate to the code'
-    puts '(it doesn\'t specify the slot that is correct or not)'
-    puts 'Enter "exit" to leave the game'
-    puts ''
+    print "\n"'From left to right enter the first letter for each color. Example: rbgy'"\n"+
+          'The code is 4 characters long and the possible colors are: r g b y w'"\n"+
+          'There isn\'t any repeated color in the secret code '"\n"+
+          'Each "o" next to your code means there is one color and placement correct'"\n"+
+          'Each "x" next to your code means there is one color correct but with wrong placement'"\n"+
+          'The position of every "o" and "x" doesn\'t relate to the code'"\n"+
+          '(it doesn\'t specify the slot that is correct or not)'"\n"+
+          'Enter "exit" to leave the game '"\n""\n"
   end
 
   def update_board(attempt,feedback)
   	attempt = attempt.split("")
   	@gameboard << "(#{attempt[0]}) (#{attempt[1]}) (#{attempt[2]}) (#{attempt[3]}) #{feedback}"
-  	nil
   end	
 
   class CpuPlayer
-    
+    #Generates random secret code without repeating colors
     def generate_code
       code = ""	
       4.times do |index|
@@ -91,7 +95,9 @@ class Mastermind
       end
       code
     end
-
+    #Generates random code attempts until it finds the 4 right colors using the feedback
+    #(right color and placement "o" and right color wrong placement "x"), 
+    #then generates random codes using only those 4 colors without repeating previously used wrong codes
     def generate_attempt(previous_attempt="",feedback="",wrong_codes=[])
       code = ""
       valid = false
@@ -117,7 +123,7 @@ class Mastermind
         code
       end      
     end
-
+    
     def check_attempt(attempt, secret_code)
       feedback = []
       attempt = attempt.split("")
@@ -129,13 +135,15 @@ class Mastermind
         end
       end
       #reverse the feedback so the player can't so easily deduce which color is correctly placed (it's easy anyway)
-      return feedback.reverse.join("")  
+      feedback.reverse.join("")  
     end
+
   end
 
   class Player < CpuPlayer
 
     def generate_code
+      puts "\n""The valid colors are: r g b y w"
       print "Enter a code for the CPU to guess: "
       code = gets.chomp.downcase[0..3] 
       while /[^rgbyw]/.match(code) || code.length < 4
@@ -145,10 +153,9 @@ class Mastermind
       end
       code
     end
+
   end
-  
 end
 
 my_game = Mastermind.new
-my_game.start_cpu_vs_player
-#my_game.start_player_vs_cpu
+my_game.select_gamemode
